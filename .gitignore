@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build output
+dist/
+build/
+
+# Astro
+.astro/
+
+# Editor/IDE
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Development tools
+.claude/
+.agents/
+.opencode/
+CLAUDE.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.log
+.turbo/
+
+# OS
+Thumbs.db
+.DS_Store
