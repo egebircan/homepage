@@ -28,7 +28,7 @@ function formatDate(date: Date): string {
 <Base title={post.data.title} description={post.data.description}>
   <article class="post">
     <header class="post__header">
-      <a href="/blog" class="post__back">&larr; back to blog</a>
+      <a href="/homepage/blog" class="post__back">&larr; back</a>
       <h1 class="post__title">{post.data.title}</h1>
       <time class="post__date" datetime={post.data.date.toISOString()}>
         {formatDate(post.data.date)}

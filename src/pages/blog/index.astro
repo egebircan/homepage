@@ -17,7 +17,7 @@ function formatDate(date: Date): string {
 <Base title="Blog">
   <main class="blog-index">
     <header class="blog-index__header">
-      <a href="/" class="blog-index__back">&larr; home</a>
+      <a href="/homepage" class="blog-index__back">&larr; home</a>
       <h1 class="blog-index__title">Writing</h1>
     </header>
 
@@ -27,7 +27,7 @@ function formatDate(date: Date): string {
       <ul class="blog-index__list">
         {posts.map((post) => (
           <li class="blog-index__item">
-            <a href={`/blog/${post.slug}`} class="blog-index__link">
+            <a href={`/homepage/blog/${post.slug}`} class="blog-index__link">
               <span class="blog-index__post-title">{post.data.title}</span>
               <time class="blog-index__date" datetime={post.data.date.toISOString()}>
                 {formatDate(post.data.date)}
