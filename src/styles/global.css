@@ -404,11 +404,9 @@ em {
   }
 
   .home__name {
-    font-size: 2.25rem;
+    font-size: 4rem;
     letter-spacing: 0.1em;
   }
-
-
 
   .blog-index__link {
     flex-direction: column;
