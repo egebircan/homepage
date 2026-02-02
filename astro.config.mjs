@@ -2,6 +2,8 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
+  site: 'https://egebircan.github.io',
+  base: '/homepage',
   markdown: {
     shikiConfig: {
       theme: 'github-dark',
