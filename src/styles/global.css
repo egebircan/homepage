@@ -67,14 +67,14 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
   font-size: 3rem;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
 }
 
 h2 {
-  font-size: 1.75rem;
+  font-size: 1.9rem;
   margin-top: var(--space-xl);
   margin-bottom: var(--space-md);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 h3 {
@@ -121,24 +121,6 @@ em {
   padding-top: 55vh;
   padding-left: 18%;
   overflow: hidden;
-}
-
-.home__artwork {
-  position: fixed;
-  top: 50%;
-  right: 10%;
-  transform: translateY(-50%);
-  max-width: 400px;
-  max-height: 70vh;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.home__artwork img {
-  width: 100%;
-  height: auto;
-  max-height: 70vh;
-  object-fit: contain;
 }
 
 .home__name {
@@ -299,8 +281,8 @@ em {
 
 .post__content {
   font-family: var(--font-serif);
-  font-size: 1.0625rem;
-  letter-spacing: 0.03em;
+  font-size: 1.2rem;
+  letter-spacing: 0.04em;
 }
 
 .post__content > *:first-child {
@@ -397,10 +379,6 @@ em {
   .home {
     padding-left: var(--space-lg);
     padding-top: 45vh;
-  }
-
-  .home__artwork {
-    display: none;
   }
 
   .home__name {
