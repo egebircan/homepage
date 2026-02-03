@@ -15,11 +15,44 @@ import Base from '../layouts/Base.astro';
 
   <script is:inline>
     (function() {
-      var R = 150;
       var GLITCH_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?/~`01';
       var COLOR_SHIFT = 6;
       var MAX_JITTER = 5;
       var NOISE_SIZE = 64;
+      var WARP_AMP = 45;
+      var WARP_SPEED = 0.003;
+      var WARP_SEGMENTS = 64;
+
+      // Mobile detection
+      var isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // Chaotic radius system — with max, constant jitter
+      var R_BASE = 150;
+      var R_MIN = 80;
+      var R_MAX = isMobile ? 140 : 220;
+      var rCurrent = R_BASE;
+      var rVelocity = 0;
+      var rMomentum = 0;
+
+      function updateRadiusChaos() {
+        rMomentum += (Math.random() - 0.48) * 8;
+        rVelocity += (Math.random() - 0.5) * 6;
+        rVelocity *= 0.92;
+        rMomentum *= 0.98;
+        rCurrent += rVelocity + (rMomentum * 0.1);
+        if (rCurrent < R_MIN) {
+          rCurrent = R_MIN;
+          rMomentum = Math.abs(rMomentum) + 5;
+        }
+        if (rCurrent > R_MAX) {
+          rCurrent = R_MAX;
+          rMomentum = -Math.abs(rMomentum) - 5;
+        }
+      }
+
+      function getRMax() {
+        return rCurrent + WARP_AMP * 2;
+      }
 
       var cursorX = -9999;
       var cursorY = -9999;
@@ -47,7 +80,8 @@ import Base from '../layouts/Base.astro';
             if (roll < 0.4) {
               d[i] = 139; d[i+1] = 0; d[i+2] = 0;
             } else if (roll < 0.7) {
-              d[i] = 0; d[i+1] = 229; d[i+2] = 255;
+              var g = 51 + Math.floor(Math.random() * 120);
+              d[i] = g; d[i+1] = g; d[i+2] = g;
             } else {
               d[i] = 190; d[i+1] = 190; d[i+2] = 190;
             }
@@ -57,6 +91,50 @@ import Base from '../layouts/Base.astro';
         noiseCtx.putImageData(id, 0, 0);
       }
       generateNoise();
+
+      // Warp boundary functions — sharp glitchy edges
+      function sharpStep(val, steps) {
+        return Math.floor(val * steps) / steps;
+      }
+
+      function warp(angle, t) {
+        var chaosScale = rCurrent * 0.003;
+        var steppedT = sharpStep(t, 8);
+        
+        // Sharp blocky glitches
+        var blocky = (sharpStep(Math.sin(angle * 3 + steppedT * 3.0), 4) * 0.35 +
+                      sharpStep(Math.sin(angle * 5 - steppedT * 4.2), 3) * 0.25);
+        
+        // Random spike glitches
+        var spike = (Math.random() > 0.84) ? (Math.random() - 0.5) * WARP_AMP * 2.2 : 0;
+        
+        // Sharp angular distortion
+        var angular = (Math.abs(Math.sin(angle * 7 + t * 5.5)) * 0.25 +
+                       Math.abs(Math.sin(angle * 11 - t * 7.0)) * 0.20 +
+                       Math.abs(Math.sin(angle * 17 + t * 3.2)) * 0.15);
+        
+        // Occasional hard corner snaps
+        var snap = (Math.random() > 0.93) ? Math.sign(Math.sin(angle * 2 + t)) * WARP_AMP * 1.0 : 0;
+        
+        return (blocky + angular) * WARP_AMP * (1 + chaosScale) + spike + snap;
+      }
+
+      function warpedRadius(angle, t) {
+        return rCurrent + warp(angle, t);
+      }
+
+      function drawWarpedPath(ctx, cx, cy, t) {
+        ctx.beginPath();
+        for (var s = 0; s <= WARP_SEGMENTS; s++) {
+          var a = (s / WARP_SEGMENTS) * Math.PI * 2;
+          var wr = warpedRadius(a, t);
+          var px = cx + Math.cos(a) * wr;
+          var py = cy + Math.sin(a) * wr;
+          if (s === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+      }
 
       // Character splitting
       var allChars = [];
@@ -134,63 +212,67 @@ import Base from '../layouts/Base.astro';
           return;
         }
 
+        updateRadiusChaos();
         generateNoise();
         var x = cursorX;
         var y = cursorY;
+        var tNow = performance.now() * WARP_SPEED;
+        var RMax = getRMax();
 
-        // Canvas effects
+        // Canvas effects — warped boundary clip
         ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, R, 0, Math.PI * 2);
+        drawWarpedPath(ctx, x, y, tNow);
         ctx.clip();
 
-        var grad = ctx.createRadialGradient(x, y, 0, x, y, R);
+        var grad = ctx.createRadialGradient(x, y, 0, x, y, RMax);
         grad.addColorStop(0, 'rgba(139, 0, 0, 0.1)');
         grad.addColorStop(1, 'rgba(139, 0, 0, 0)');
         ctx.fillStyle = grad;
-        ctx.fillRect(x - R, y - R, R * 2, R * 2);
+        ctx.fillRect(x - RMax, y - RMax, RMax * 2, RMax * 2);
 
         var pat = ctx.createPattern(noiseCanvas, 'repeat');
         if (pat) {
           ctx.fillStyle = pat;
           ctx.globalAlpha = 0.9;
-          ctx.fillRect(x - R, y - R, R * 2, R * 2);
+          ctx.fillRect(x - RMax, y - RMax, RMax * 2, RMax * 2);
           ctx.globalAlpha = 1;
         }
 
         ctx.fillStyle = 'rgba(139, 0, 0, 0.04)';
-        for (var ly = y - R; ly < y + R; ly += 4) {
-          ctx.fillRect(x - R, ly, R * 2, 1);
+        for (var ly = y - RMax; ly < y + RMax; ly += 4) {
+          ctx.fillRect(x - RMax, ly, RMax * 2, 1);
         }
 
         for (var fi = 0; fi < 3; fi++) {
-          var bx = x + (Math.random() - 0.5) * R * 2;
-          var by = y + (Math.random() - 0.5) * R;
+          var bx = x + (Math.random() - 0.5) * RMax * 2;
+          var by = y + (Math.random() - 0.5) * RMax;
           ctx.fillStyle = Math.random() > 0.5
             ? 'rgba(139, 0, 0, ' + (Math.random() * 0.25) + ')'
-            : 'rgba(0, 229, 255, ' + (Math.random() * 0.18) + ')';
+            : 'rgba(120, 120, 120, ' + (Math.random() * 0.18) + ')';
           ctx.fillRect(bx, by, Math.random() * 60 + 20, 2);
         }
 
-        ctx.restore();
+          ctx.restore();
 
-        // Text glitch
+        // Text glitch — follows warped boundary
         for (var ci = 0; ci < allChars.length; ci++) {
           var c = allChars[ci];
           var dx = c.cx - x;
           var dy = c.cy - y;
           var dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist > R) {
+          var angle = Math.atan2(dy, dx);
+          var rAtAngle = warpedRadius(angle, tNow);
+          if (dist > rAtAngle) {
             c.el.textContent = c.orig;
             c.el.style.textShadow = '';
             c.el.style.transform = '';
             c.el.style.opacity = '';
             continue;
           }
-          var intensity = 1 - dist / R;
+          var intensity = 1 - dist / rAtAngle;
           var i2 = intensity * intensity;
           var shift = COLOR_SHIFT * i2;
-          c.el.style.textShadow = (-shift) + 'px 0 #8b0000, ' + shift + 'px 0 #00e5ff';
+          c.el.style.textShadow = (-shift) + 'px 0 #8b0000, ' + shift + 'px 0 #666666';
           if (Math.random() < i2 * 0.7) {
             c.el.textContent = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
           } else {
