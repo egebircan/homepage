@@ -8,9 +8,11 @@
   --bone: #e8e4dc;
   --stone: #6b6b6b;
   --blood: #8b0000;
+  --glitch-cyan: #00e5ff;
 
   /* Typography scale */
   --font-serif: 'Playfair Display', Georgia, serif;
+  --font-body-serif: 'Lora', Georgia, serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 
@@ -71,7 +73,7 @@ h1 {
 }
 
 h2 {
-  font-size: 1.9rem;
+  font-size: 1.75rem;
   margin-top: var(--space-xl);
   margin-bottom: var(--space-md);
   letter-spacing: 0.02em;
@@ -280,9 +282,9 @@ em {
 }
 
 .post__content {
-  font-family: var(--font-serif);
-  font-size: 1.2rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-body-serif);
+  font-size: 1rem;
+  letter-spacing: 0.045em;
 }
 
 .post__content > *:first-child {
@@ -369,6 +371,29 @@ em {
 .post__content th {
   font-weight: 600;
   background: rgba(255, 255, 255, 0.02);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLITCH EFFECT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#glitch-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.glitch-char {
+  display: inline-block;
+  position: relative;
+  will-change: transform, opacity;
+}
+
+.glitch-char--space {
+  width: 0.3em;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -4,10 +4,206 @@ import Base from '../layouts/Base.astro';
 
 <Base title="Home">
   <main class="home">
-    <h1 class="home__name">B~BIRD</h1>
-    <p class="home__tagline">echoes of the wonder within</p>
+    <h1 class="home__name" data-glitch aria-label="B~BIRD">B~BIRD</h1>
+    <p class="home__tagline" data-glitch aria-label="echoes of the wonder within">echoes of the wonder within</p>
     <nav class="home__nav">
-      <a href="/homepage/blog">writing</a>
+      <a href="/homepage/blog" data-glitch aria-label="writing">writing</a>
     </nav>
   </main>
+
+  <canvas id="glitch-canvas"></canvas>
+
+  <script is:inline>
+    (function() {
+      var R = 150;
+      var GLITCH_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?/~`01';
+      var COLOR_SHIFT = 6;
+      var MAX_JITTER = 5;
+      var NOISE_SIZE = 64;
+
+      var cursorX = -9999;
+      var cursorY = -9999;
+      var active = false;
+
+      var canvas = document.getElementById('glitch-canvas');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Noise tile
+      var noiseCanvas = document.createElement('canvas');
+      noiseCanvas.width = NOISE_SIZE;
+      noiseCanvas.height = NOISE_SIZE;
+      var noiseCtx = noiseCanvas.getContext('2d');
+
+      function generateNoise() {
+        var id = noiseCtx.createImageData(NOISE_SIZE, NOISE_SIZE);
+        var d = id.data;
+        for (var i = 0; i < d.length; i += 4) {
+          if (Math.random() < 0.07) {
+            var roll = Math.random();
+            if (roll < 0.4) {
+              d[i] = 139; d[i+1] = 0; d[i+2] = 0;
+            } else if (roll < 0.7) {
+              d[i] = 0; d[i+1] = 229; d[i+2] = 255;
+            } else {
+              d[i] = 190; d[i+1] = 190; d[i+2] = 190;
+            }
+            d[i+3] = 25 + Math.floor(Math.random() * 60);
+          }
+        }
+        noiseCtx.putImageData(id, 0, 0);
+      }
+      generateNoise();
+
+      // Character splitting
+      var allChars = [];
+      var targets = document.querySelectorAll('[data-glitch]');
+      for (var t = 0; t < targets.length; t++) {
+        var el = targets[t];
+        var text = el.textContent || '';
+        el.textContent = '';
+        for (var j = 0; j < text.length; j++) {
+          var ch = text[j];
+          var span = document.createElement('span');
+          span.style.display = 'inline-block';
+          span.style.position = 'relative';
+          if (ch === ' ') span.style.width = '0.3em';
+          span.textContent = ch;
+          el.appendChild(span);
+          allChars.push({ el: span, orig: ch, cx: 0, cy: 0 });
+        }
+      }
+
+      function cachePositions() {
+        for (var i = 0; i < allChars.length; i++) {
+          allChars[i].el.style.transform = '';
+          var r = allChars[i].el.getBoundingClientRect();
+          allChars[i].cx = r.left + r.width / 2;
+          allChars[i].cy = r.top + r.height / 2;
+        }
+      }
+      cachePositions();
+      if (document.fonts) document.fonts.ready.then(cachePositions);
+
+      window.addEventListener('resize', function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        cachePositions();
+      });
+
+      // Input
+      document.addEventListener('mousemove', function(e) {
+        cursorX = e.clientX;
+        cursorY = e.clientY;
+        active = true;
+      });
+      document.addEventListener('mouseleave', function() {
+        active = false;
+      });
+      document.addEventListener('touchstart', function(e) {
+        cursorX = e.touches[0].clientX;
+        cursorY = e.touches[0].clientY;
+        active = true;
+      }, { passive: true });
+      document.addEventListener('touchmove', function(e) {
+        cursorX = e.touches[0].clientX;
+        cursorY = e.touches[0].clientY;
+      }, { passive: true });
+      document.addEventListener('touchend', function() {
+        active = false;
+      }, { passive: true });
+
+      function resetAllChars() {
+        for (var i = 0; i < allChars.length; i++) {
+          allChars[i].el.textContent = allChars[i].orig;
+          allChars[i].el.style.textShadow = '';
+          allChars[i].el.style.transform = '';
+          allChars[i].el.style.opacity = '';
+        }
+      }
+
+      function loop() {
+        requestAnimationFrame(loop);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!active) {
+          resetAllChars();
+          return;
+        }
+
+        generateNoise();
+        var x = cursorX;
+        var y = cursorY;
+
+        // Canvas effects
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, R, 0, Math.PI * 2);
+        ctx.clip();
+
+        var grad = ctx.createRadialGradient(x, y, 0, x, y, R);
+        grad.addColorStop(0, 'rgba(139, 0, 0, 0.1)');
+        grad.addColorStop(1, 'rgba(139, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - R, y - R, R * 2, R * 2);
+
+        var pat = ctx.createPattern(noiseCanvas, 'repeat');
+        if (pat) {
+          ctx.fillStyle = pat;
+          ctx.globalAlpha = 0.9;
+          ctx.fillRect(x - R, y - R, R * 2, R * 2);
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = 'rgba(139, 0, 0, 0.04)';
+        for (var ly = y - R; ly < y + R; ly += 4) {
+          ctx.fillRect(x - R, ly, R * 2, 1);
+        }
+
+        for (var fi = 0; fi < 3; fi++) {
+          var bx = x + (Math.random() - 0.5) * R * 2;
+          var by = y + (Math.random() - 0.5) * R;
+          ctx.fillStyle = Math.random() > 0.5
+            ? 'rgba(139, 0, 0, ' + (Math.random() * 0.25) + ')'
+            : 'rgba(0, 229, 255, ' + (Math.random() * 0.18) + ')';
+          ctx.fillRect(bx, by, Math.random() * 60 + 20, 2);
+        }
+
+        ctx.restore();
+
+        // Text glitch
+        for (var ci = 0; ci < allChars.length; ci++) {
+          var c = allChars[ci];
+          var dx = c.cx - x;
+          var dy = c.cy - y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > R) {
+            c.el.textContent = c.orig;
+            c.el.style.textShadow = '';
+            c.el.style.transform = '';
+            c.el.style.opacity = '';
+            continue;
+          }
+          var intensity = 1 - dist / R;
+          var i2 = intensity * intensity;
+          var shift = COLOR_SHIFT * i2;
+          c.el.style.textShadow = (-shift) + 'px 0 #8b0000, ' + shift + 'px 0 #00e5ff';
+          if (Math.random() < i2 * 0.7) {
+            c.el.textContent = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+          } else {
+            c.el.textContent = c.orig;
+          }
+          var jx = (Math.random() - 0.5) * 2 * MAX_JITTER * i2;
+          var jy = (Math.random() - 0.5) * 2 * MAX_JITTER * i2;
+          c.el.style.transform = 'translate(' + jx + 'px, ' + jy + 'px)';
+          c.el.style.opacity = (Math.random() < i2 * 0.12) ? '0' : '';
+        }
+      }
+
+      requestAnimationFrame(loop);
+    })();
+  </script>
 </Base>

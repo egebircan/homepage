@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/homepage',
   markdown: {
     shikiConfig: {
-      theme: 'github-dark',
+      theme: 'vesper',
     },
   },
 });
